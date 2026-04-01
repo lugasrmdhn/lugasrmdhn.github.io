@@ -6,15 +6,45 @@
 </head>
 <body>
   <h1>My Base App</h1>
+
   <button onclick="connectWallet()">Connect Wallet</button>
+  <button onclick="sendTx()">Send Transaction</button>
 
   <script>
+    let userAccount = null;
+
     async function connectWallet() {
       if (window.ethereum) {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        alert("Connected: " + accounts[0]);
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        });
+        userAccount = accounts[0];
+        alert("Connected: " + userAccount);
       } else {
         alert("No wallet found");
+      }
+    }
+
+    async function sendTx() {
+      if (!userAccount) {
+        alert("Connect wallet dulu!");
+        return;
+      }
+
+      try {
+        await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [{
+            from: userAccount,
+            to: userAccount, // kirim ke diri sendiri (aman buat test)
+            value: "0x38D7EA4C68000" // 0.001 ETH
+          }]
+        });
+
+        alert("Transaksi dikirim!");
+      } catch (err) {
+        console.error(err);
+        alert("Gagal: " + err.message);
       }
     }
   </script>
