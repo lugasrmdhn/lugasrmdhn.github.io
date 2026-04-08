@@ -6,205 +6,239 @@
 
 <meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
 
-<title>Base Builder App</title>
+<title>My Base App</title>
 
 <style>
 *{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Segoe UI,sans-serif;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Segoe UI',sans-serif;
 }
 
 body{
-background:#020617;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-color:white;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:
+    radial-gradient(circle at 20% 20%, #3b82f655 0%, transparent 25%),
+    radial-gradient(circle at 80% 80%, #8b5cf655 0%, transparent 25%),
+    radial-gradient(circle at 50% 50%, #06b6d455 0%, transparent 35%),
+    #020617;
+  overflow:hidden;
+  color:white;
 }
 
 .container{
-width:420px;
-padding:30px;
-border-radius:20px;
-background:#0f172a;
-text-align:center;
-box-shadow:0 0 30px rgba(0,0,0,.4);
+  width:430px;
+  padding:35px;
+  border-radius:28px;
+  background:rgba(15,23,42,0.75);
+  backdrop-filter:blur(25px);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 0 50px rgba(59,130,246,0.15),
+    0 0 100px rgba(139,92,246,0.08);
+  text-align:center;
 }
 
 h1{
-margin-bottom:10px;
+  font-size:36px;
+  font-weight:800;
+  margin-bottom:12px;
+  background:linear-gradient(90deg,#60a5fa,#c084fc,#22d3ee);
+  background-size:200%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
 }
 
 p{
-color:#94a3b8;
-margin-bottom:20px;
+  color:#94a3b8;
+  margin-bottom:28px;
+  font-size:15px;
 }
 
 button{
-width:100%;
-padding:15px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-cursor:pointer;
-font-weight:bold;
+  width:100%;
+  padding:16px;
+  margin-top:14px;
+  border:none;
+  border-radius:16px;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.3s;
 }
 
-.connect{
-background:#2563eb;
-color:white;
+.connect-btn{
+  background:linear-gradient(90deg,#2563eb,#7c3aed);
+  color:white;
 }
 
-.send{
-background:#14b8a6;
-color:white;
+.send-btn{
+  background:linear-gradient(90deg,#06b6d4,#14b8a6);
+  color:white;
 }
 
-#wallet{
-margin-top:20px;
-font-size:14px;
-word-break:break-all;
+#walletText{
+  margin-top:22px;
+  padding:14px;
+  border-radius:14px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05);
+  font-size:13px;
+  color:#cbd5e1;
+  word-break:break-all;
 }
 </style>
 </head>
 <body>
 
 <div class="container">
+  <h1>My Base App</h1>
+  <p>Connect wallet & send tracked transaction</p>
 
-<h1>Base Builder App</h1>
-<p>ERC-8021 Builder Code Integrated</p>
+  <button class="connect-btn" onclick="connectWallet()">
+    Connect Wallet
+  </button>
 
-<button class="connect" id="connectBtn">
-Connect Wallet
-</button>
+  <button class="send-btn" onclick="sendTx()">
+    Send 0.00001 ETH
+  </button>
 
-<button class="send" id="sendBtn">
-Send Builder TX
-</button>
-
-<div id="wallet">
-Wallet not connected
+  <div id="walletText">
+    Wallet not connected
+  </div>
 </div>
-
-</div>
-
-<!-- ETHERS MODERN -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
 
 <script>
-let provider;
-let signer;
-let userAddress;
+let userAccount = null;
 
 /*
-============================
-BASE BUILDER CONFIG
-============================
+=================================
+BUILDER CODE LU
+=================================
 */
-
 const BUILDER_CODE = "bc_qflzf7nl";
 
 
 /*
-ERC-8021 ENCODER
+=================================
+ENCODE BUILDER CODE KE ERC8021
+=================================
 */
-function encodeBuilderCode(code){
+function generateSuffix(code) {
 
-const codeHex = Array.from(code)
-.map(char=>char.charCodeAt(0).toString(16).padStart(2,"0"))
-.join("");
+  const hexCode = Array.from(code)
+    .map(c => c.charCodeAt(0).toString(16).padStart(2,"0"))
+    .join("");
 
-const lengthHex = code.length.toString(16).padStart(2,"0");
+  const lengthHex = code.length
+    .toString(16)
+    .padStart(2,"0");
 
-const schema = "00";
-
-const marker = "80218021802180218021802180218021";
-
-return "0x" + codeHex + lengthHex + schema + marker;
-
+  return (
+    "0x" +
+    hexCode +
+    lengthHex +
+    "00" +
+    "80218021802180218021802180218021"
+  );
 }
 
-const DATA_SUFFIX = encodeBuilderCode(BUILDER_CODE);
+const DATA_SUFFIX = generateSuffix(BUILDER_CODE);
 
 
 /*
+=================================
 CONNECT WALLET
+=================================
 */
-async function connectWallet(){
+async function connectWallet() {
 
-if(!window.ethereum){
-alert("Install MetaMask");
-return;
-}
+  try {
 
-provider = new ethers.BrowserProvider(window.ethereum);
+    if (!window.ethereum) {
+      alert("MetaMask not found");
+      return;
+    }
 
-await provider.send("eth_requestAccounts",[]);
+    const accounts =
+      await window.ethereum.request({
+        method:'eth_requestAccounts'
+      });
 
-signer = await provider.getSigner();
+    userAccount = accounts[0];
 
-userAddress = await signer.getAddress();
+    document.getElementById("walletText").innerText =
+      "Connected: " + userAccount;
 
-document.getElementById("wallet").innerText =
-"Connected: " + userAddress;
+  }
+
+  catch(err) {
+
+    console.error(err);
+
+    alert(err.message);
+
+  }
 
 }
 
 
 /*
-SEND TX
+=================================
+SEND TX + BUILDER SUFFIX
+=================================
 */
-async function sendTransaction(){
+async function sendTx() {
 
-if(!signer){
-alert("Connect wallet first");
-return;
+  if (!userAccount) {
+    alert("Connect wallet first");
+    return;
+  }
+
+  try {
+
+    const wei =
+      BigInt(10000000000000); // 0.00001 ETH
+
+    const txHash =
+      await window.ethereum.request({
+
+        method:'eth_sendTransaction',
+
+        params:[{
+
+          from:userAccount,
+
+          to:userAccount,
+
+          value:'0x'+wei.toString(16),
+
+          dataSuffix:DATA_SUFFIX
+
+        }]
+
+      });
+
+    alert("Transaction Sent!\n"+txHash);
+
+    console.log("TX HASH:",txHash);
+    console.log("DATA SUFFIX:",DATA_SUFFIX);
+
+  }
+
+  catch(err) {
+
+    console.error("FULL ERROR:",err);
+
+    alert(err.message);
+
+  }
+
 }
-
-try{
-
-const tx = await signer.sendTransaction({
-
-to:userAddress,
-
-value:ethers.parseEther("0.00001"),
-
-data:DATA_SUFFIX
-
-});
-
-await tx.wait();
-
-alert("Builder TX Sent!");
-
-console.log("TX HASH:",tx.hash);
-
-}
-catch(err){
-
-console.error(err);
-
-alert("Failed / Wallet may reject ERC-8021");
-
-}
-
-}
-
-
-/*
-BUTTON EVENTS
-*/
-document
-.getElementById("connectBtn")
-.addEventListener("click",connectWallet);
-
-document
-.getElementById("sendBtn")
-.addEventListener("click",sendTransaction);
-
 </script>
 
 </body>
