@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>My Base App</title>
+<meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
+
+<title>My Base App</title>
+
 <style>
 *{
   margin:0;
@@ -35,26 +37,7 @@ body{
   background:rgba(15,23,42,0.75);
   backdrop-filter:blur(25px);
   border:1px solid rgba(255,255,255,0.08);
-  box-shadow:
-    0 0 50px rgba(59,130,246,0.15),
-    0 0 100px rgba(139,92,246,0.08);
   text-align:center;
-}
-
-h1{
-  font-size:36px;
-  font-weight:800;
-  margin-bottom:12px;
-  background:linear-gradient(90deg,#60a5fa,#c084fc,#22d3ee);
-  background-size:200%;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-p{
-  color:#94a3b8;
-  margin-bottom:28px;
-  font-size:15px;
 }
 
 button{
@@ -66,7 +49,6 @@ button{
   font-size:15px;
   font-weight:700;
   cursor:pointer;
-  transition:.3s;
 }
 
 .connect-btn{
@@ -74,19 +56,9 @@ button{
   color:white;
 }
 
-.connect-btn:hover{
-  transform:scale(1.03);
-  box-shadow:0 0 25px #3b82f688;
-}
-
 .send-btn{
   background:linear-gradient(90deg,#06b6d4,#14b8a6);
   color:white;
-}
-
-.send-btn:hover{
-  transform:scale(1.03);
-  box-shadow:0 0 25px #06b6d488;
 }
 
 #walletText{
@@ -94,9 +66,6 @@ button{
   padding:14px;
   border-radius:14px;
   background:rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.05);
-  font-size:13px;
-  color:#cbd5e1;
   word-break:break-all;
 }
 </style>
@@ -105,7 +74,7 @@ button{
 
 <div class="container">
   <h1>My Base App</h1>
-  <p>Connect wallet & send test transaction</p>
+  <p>Connect wallet & send tracked transaction</p>
 
   <button class="connect-btn" onclick="connectWallet()">
     Connect Wallet
@@ -123,6 +92,28 @@ button{
 <script>
 let userAccount = null;
 
+/*
+BUILDER CODE LU
+*/
+const BUILDER_CODE = "bc_qflzf7nl";
+
+
+/*
+ENCODE BUILDER CODE → ERC8021 FORMAT
+*/
+function generateSuffix(code){
+    const hex = Array.from(code)
+      .map(c=>c.charCodeAt(0).toString(16).padStart(2,"0"))
+      .join("");
+
+    const len = code.length.toString(16).padStart(2,"0");
+
+    return "0x" + hex + len + "00" + "80218021802180218021802180218021";
+}
+
+const builderSuffix = generateSuffix(BUILDER_CODE);
+
+
 async function connectWallet() {
   try {
     if (!window.ethereum) {
@@ -131,7 +122,7 @@ async function connectWallet() {
     }
 
     const accounts = await window.ethereum.request({
-      method: 'eth_requestAccounts'
+      method:'eth_requestAccounts'
     });
 
     userAccount = accounts[0];
@@ -139,36 +130,46 @@ async function connectWallet() {
     document.getElementById("walletText").innerText =
       "Connected: " + userAccount;
 
-  } catch (err) {
+  } catch(err){
     console.error(err);
-    alert("Failed connect wallet");
   }
 }
 
+
 async function sendTx() {
-  if (!userAccount) {
+  if (!userAccount){
     alert("Connect wallet first");
     return;
   }
 
   try {
+
     const ethAmount = 0.00001;
 
     const wei =
       BigInt(Math.floor(ethAmount * 1e18));
 
-    await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{
-        from: userAccount,
-        to: userAccount,
-        value: '0x' + wei.toString(16)
-      }]
+    const txParams = {
+      from:userAccount,
+      to:userAccount,
+      value:'0x'+wei.toString(16),
+
+      /*
+      BUILDER ATTRIBUTION
+      */
+      data:builderSuffix
+    };
+
+    const txHash = await window.ethereum.request({
+      method:'eth_sendTransaction',
+      params:[txParams]
     });
 
-    alert("Transaction sent!");
+    alert("Tracked TX Sent!\n"+txHash);
 
-  } catch (err) {
+    console.log("Builder suffix:",builderSuffix);
+
+  } catch(err){
     console.error(err);
     alert("Transaction failed");
   }
