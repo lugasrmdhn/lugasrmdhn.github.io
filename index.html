@@ -1,247 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
 
-<title>Lugas Base App</title>
+  <title>Lugas Base App</title>
 
-<meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial,sans-serif;
+    }
 
-<style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
+    body{
+      background:linear-gradient(135deg,#0f172a,#020617);
+      color:white;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+    }
 
-body{
-background:linear-gradient(135deg,#0d1117,#020617);
-color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:20px;
-}
+    .card{
+      width:100%;
+      max-width:500px;
+      background:#111827;
+      border:1px solid #1f2937;
+      border-radius:24px;
+      padding:32px;
+      box-shadow:0 20px 40px rgba(0,0,0,0.45);
+    }
 
-.container{
-width:100%;
-max-width:500px;
-background:#161b22;
-padding:30px;
-border-radius:24px;
-border:1px solid #30363d;
-box-shadow:0 10px 40px rgba(0,0,0,0.5);
-}
+    h1{
+      font-size:32px;
+      text-align:center;
+      margin-bottom:10px;
+    }
 
-h1{
-font-size:32px;
-margin-bottom:10px;
-text-align:center;
-}
+    .subtitle{
+      text-align:center;
+      color:#94a3b8;
+      margin-bottom:25px;
+    }
 
-.subtitle{
-text-align:center;
-color:#8b949e;
-margin-bottom:25px;
-}
+    button{
+      width:100%;
+      padding:15px;
+      border:none;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:bold;
+      cursor:pointer;
+      transition:0.25s;
+    }
 
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:14px;
-font-weight:bold;
-font-size:15px;
-cursor:pointer;
-transition:.25s;
-}
+    .wallet-btn{
+      background:#2563eb;
+      color:white;
+      margin-bottom:15px;
+    }
 
-.wallet-btn{
-background:#1d9bf0;
-color:white;
-margin-bottom:15px;
-}
+    .wallet-btn:hover{
+      background:#1d4ed8;
+    }
 
-.wallet-btn:hover{
-background:#1583cc;
-}
+    .send-btn{
+      background:#22c55e;
+      color:white;
+    }
 
-.post-btn{
-background:#22c55e;
-color:white;
-margin-top:10px;
-}
+    .send-btn:hover{
+      background:#16a34a;
+    }
 
-.post-btn:hover{
-background:#16a34a;
-}
-
-input{
-width:100%;
-padding:15px;
-border:none;
-outline:none;
-border-radius:14px;
-background:#21262d;
-color:white;
-font-size:15px;
-margin-bottom:10px;
-}
-
-.board{
-margin-top:25px;
-}
-
-.message{
-background:#21262d;
-padding:15px;
-border-radius:14px;
-margin-bottom:10px;
-border-left:4px solid #1d9bf0;
-animation:fadeIn .3s ease;
-}
-
-@keyframes fadeIn{
-from{
-opacity:0;
-transform:translateY(10px);
-}
-to{
-opacity:1;
-transform:translateY(0);
-}
-}
-</style>
+    .status{
+      margin-top:15px;
+      text-align:center;
+      color:#94a3b8;
+      font-size:14px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
+  <div class="card">
+    <h1>Base Wallet App</h1>
+    <p class="subtitle">Connect MetaMask on Base Network</p>
 
-<h1>Base Confession</h1>
+    <button class="wallet-btn" onclick="connectWallet()">
+      Connect Wallet
+    </button>
 
-<p class="subtitle">
-Anonymous Web3 Message Board
-</p>
+    <button class="send-btn" onclick="sendTx()">
+      Send Transaction
+    </button>
 
-<button class="wallet-btn" onclick="connectWallet()">
-Connect Wallet
-</button>
+    <p class="status" id="status">
+      Wallet not connected
+    </p>
+  </div>
 
-<input
-id="messageInput"
-placeholder="What's on your mind?"
->
+  <script>
+    let userAccount = null;
 
-<button class="post-btn" onclick="postMessage()">
-Post Message
-</button>
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts'
+          });
 
-<div class="board" id="board"></div>
+          userAccount = accounts[0];
 
-</div>
+          document.getElementById("status").innerText =
+            "Connected: " +
+            userAccount.slice(0,6) +
+            "..." +
+            userAccount.slice(-4);
 
-<script>
-let userAccount = null;
+        } catch (err) {
+          console.error(err);
+          alert("Connection failed.");
+        }
 
-function loadMessages(){
+      } else {
+        alert("MetaMask not detected.");
+      }
+    }
 
-const messages =
-JSON.parse(
-localStorage.getItem("messages")
-) || [];
+    async function sendTx() {
+      if (!userAccount) {
+        alert("Connect wallet first.");
+        return;
+      }
 
-const board =
-document.getElementById("board");
+      try {
+        await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: userAccount,
+            to: userAccount,
+            value: '0x38D7EA4C68000'
+          }]
+        });
 
-board.innerHTML="";
+        alert("Transaction sent!");
 
-[...messages].reverse().forEach(msg=>{
-
-const div =
-document.createElement("div");
-
-div.className="message";
-
-div.innerText=msg;
-
-board.appendChild(div);
-
-});
-
-}
-
-async function connectWallet(){
-
-try{
-
-if(!window.ethereum){
-
-alert("Wallet not detected.");
-return;
-
-}
-
-const accounts =
-await window.ethereum.request({
-method:"eth_requestAccounts"
-});
-
-userAccount = accounts[0];
-
-document.querySelector(".wallet-btn")
-.innerText =
-"Connected: " +
-userAccount.slice(0,6) +
-"..." +
-userAccount.slice(-4);
-
-}catch(err){
-
-console.error(err);
-
-alert("Wallet connection failed.");
-
-}
-
-}
-
-function postMessage(){
-
-if(!userAccount){
-
-alert("Connect wallet first.");
-return;
-
-}
-
-const input =
-document.getElementById("messageInput");
-
-if(!input.value.trim()) return;
-
-let messages =
-JSON.parse(
-localStorage.getItem("messages")
-) || [];
-
-messages.push(input.value);
-
-localStorage.setItem(
-"messages",
-JSON.stringify(messages)
-);
-
-input.value="";
-
-loadMessages();
-
-}
-
-window.onload = loadMessages;
-</script>
+      } catch (err) {
+        console.error(err);
+        alert("Transaction failed.");
+      }
+    }
+  </script>
 
 </body>
 </html>
