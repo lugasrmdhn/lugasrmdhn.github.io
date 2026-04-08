@@ -1,161 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Base App</title>
   <meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
 
-  <title>Lugas Base App</title>
-
   <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:Arial,sans-serif;
-    }
-
     body{
-      background:linear-gradient(135deg,#0f172a,#020617);
+      background:#0f172a;
       color:white;
-      min-height:100vh;
+      font-family:Arial;
       display:flex;
       justify-content:center;
       align-items:center;
-      padding:20px;
+      min-height:100vh;
+      margin:0;
     }
 
-    .card{
-      width:100%;
-      max-width:500px;
+    .box{
       background:#111827;
-      border:1px solid #1f2937;
-      border-radius:24px;
-      padding:32px;
-      box-shadow:0 20px 40px rgba(0,0,0,0.45);
-    }
-
-    h1{
-      font-size:32px;
+      padding:30px;
+      border-radius:20px;
+      width:400px;
       text-align:center;
-      margin-bottom:10px;
-    }
-
-    .subtitle{
-      text-align:center;
-      color:#94a3b8;
-      margin-bottom:25px;
     }
 
     button{
       width:100%;
       padding:15px;
+      margin-top:10px;
       border:none;
-      border-radius:14px;
-      font-size:15px;
-      font-weight:bold;
+      border-radius:10px;
       cursor:pointer;
-      transition:0.25s;
+      font-weight:bold;
     }
 
-    .wallet-btn{
+    .connect{
       background:#2563eb;
       color:white;
-      margin-bottom:15px;
     }
 
-    .wallet-btn:hover{
-      background:#1d4ed8;
-    }
-
-    .send-btn{
+    .send{
       background:#22c55e;
       color:white;
-    }
-
-    .send-btn:hover{
-      background:#16a34a;
-    }
-
-    .status{
-      margin-top:15px;
-      text-align:center;
-      color:#94a3b8;
-      font-size:14px;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h1>Base Wallet App</h1>
-    <p class="subtitle">Connect MetaMask on Base Network</p>
+<div class="box">
+  <h1>My Base App</h1>
 
-    <button class="wallet-btn" onclick="connectWallet()">
-      Connect Wallet
-    </button>
+  <button class="connect" onclick="connectWallet()">
+    Connect Wallet
+  </button>
 
-    <button class="send-btn" onclick="sendTx()">
-      Send Transaction
-    </button>
+  <button class="send" onclick="sendTx()">
+    Send Transaction
+  </button>
 
-    <p class="status" id="status">
-      Wallet not connected
-    </p>
-  </div>
+  <p id="walletText">Not Connected</p>
+</div>
 
-  <script>
-    let userAccount = null;
+<script>
+let userAccount = null;
 
-    async function connectWallet() {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({
-            method: 'eth_requestAccounts'
-          });
+async function connectWallet() {
+  try {
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
 
-          userAccount = accounts[0];
+    userAccount = accounts[0];
 
-          document.getElementById("status").innerText =
-            "Connected: " +
-            userAccount.slice(0,6) +
-            "..." +
-            userAccount.slice(-4);
+    document.getElementById("walletText").innerText =
+      "Connected: " + userAccount;
 
-        } catch (err) {
-          console.error(err);
-          alert("Connection failed.");
-        }
+  } catch (err) {
+    console.error(err);
+    alert("Failed connect wallet");
+  }
+}
 
-      } else {
-        alert("MetaMask not detected.");
-      }
-    }
+async function sendTx() {
+  if (!userAccount) {
+    alert("Connect wallet first");
+    return;
+  }
 
-    async function sendTx() {
-      if (!userAccount) {
-        alert("Connect wallet first.");
-        return;
-      }
+  try {
+    await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from: userAccount,
+        to: userAccount,
+        value: '0x38D7EA4C68000'
+      }]
+    });
 
-      try {
-        await window.ethereum.request({
-          method: 'eth_sendTransaction',
-          params: [{
-            from: userAccount,
-            to: userAccount,
-            value: '0x38D7EA4C68000'
-          }]
-        });
+    alert("Transaction sent!");
 
-        alert("Transaction sent!");
-
-      } catch (err) {
-        console.error(err);
-        alert("Transaction failed.");
-      }
-    }
-  </script>
+  } catch (err) {
+    console.error(err);
+    alert("Transaction failed");
+  }
+}
+</script>
 
 </body>
 </html>
