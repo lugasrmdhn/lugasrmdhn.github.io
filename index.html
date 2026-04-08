@@ -6,174 +6,205 @@
 
 <meta name="base:app_id" content="69d6bf380b55e7382276f4ee">
 
-<title>My Base App</title>
+<title>Base Builder App</title>
 
 <style>
 *{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Segoe UI',sans-serif;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
 }
 
 body{
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:
-    radial-gradient(circle at 20% 20%, #3b82f655 0%, transparent 25%),
-    radial-gradient(circle at 80% 80%, #8b5cf655 0%, transparent 25%),
-    radial-gradient(circle at 50% 50%, #06b6d455 0%, transparent 35%),
-    #020617;
-  overflow:hidden;
-  color:white;
+background:#020617;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+color:white;
 }
 
 .container{
-  width:430px;
-  padding:35px;
-  border-radius:28px;
-  background:rgba(15,23,42,0.75);
-  backdrop-filter:blur(25px);
-  border:1px solid rgba(255,255,255,0.08);
-  text-align:center;
+width:420px;
+padding:30px;
+border-radius:20px;
+background:#0f172a;
+text-align:center;
+box-shadow:0 0 30px rgba(0,0,0,.4);
+}
+
+h1{
+margin-bottom:10px;
+}
+
+p{
+color:#94a3b8;
+margin-bottom:20px;
 }
 
 button{
-  width:100%;
-  padding:16px;
-  margin-top:14px;
-  border:none;
-  border-radius:16px;
-  font-size:15px;
-  font-weight:700;
-  cursor:pointer;
+width:100%;
+padding:15px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
 }
 
-.connect-btn{
-  background:linear-gradient(90deg,#2563eb,#7c3aed);
-  color:white;
+.connect{
+background:#2563eb;
+color:white;
 }
 
-.send-btn{
-  background:linear-gradient(90deg,#06b6d4,#14b8a6);
-  color:white;
+.send{
+background:#14b8a6;
+color:white;
 }
 
-#walletText{
-  margin-top:22px;
-  padding:14px;
-  border-radius:14px;
-  background:rgba(255,255,255,0.03);
-  word-break:break-all;
+#wallet{
+margin-top:20px;
+font-size:14px;
+word-break:break-all;
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>My Base App</h1>
-  <p>Connect wallet & send tracked transaction</p>
 
-  <button class="connect-btn" onclick="connectWallet()">
-    Connect Wallet
-  </button>
+<h1>Base Builder App</h1>
+<p>ERC-8021 Builder Code Integrated</p>
 
-  <button class="send-btn" onclick="sendTx()">
-    Send 0.00001 ETH
-  </button>
+<button class="connect" id="connectBtn">
+Connect Wallet
+</button>
 
-  <div id="walletText">
-    Wallet not connected
-  </div>
+<button class="send" id="sendBtn">
+Send Builder TX
+</button>
+
+<div id="wallet">
+Wallet not connected
 </div>
 
+</div>
+
+<!-- ETHERS MODERN -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
+
 <script>
-let userAccount = null;
+let provider;
+let signer;
+let userAddress;
 
 /*
-BUILDER CODE LU
+============================
+BASE BUILDER CONFIG
+============================
 */
+
 const BUILDER_CODE = "bc_qflzf7nl";
 
 
 /*
-ENCODE BUILDER CODE → ERC8021 FORMAT
+ERC-8021 ENCODER
 */
-function generateSuffix(code){
-    const hex = Array.from(code)
-      .map(c=>c.charCodeAt(0).toString(16).padStart(2,"0"))
-      .join("");
+function encodeBuilderCode(code){
 
-    const len = code.length.toString(16).padStart(2,"0");
+const codeHex = Array.from(code)
+.map(char=>char.charCodeAt(0).toString(16).padStart(2,"0"))
+.join("");
 
-    return "0x" + hex + len + "00" + "80218021802180218021802180218021";
+const lengthHex = code.length.toString(16).padStart(2,"0");
+
+const schema = "00";
+
+const marker = "80218021802180218021802180218021";
+
+return "0x" + codeHex + lengthHex + schema + marker;
+
 }
 
-const builderSuffix = generateSuffix(BUILDER_CODE);
+const DATA_SUFFIX = encodeBuilderCode(BUILDER_CODE);
 
 
-async function connectWallet() {
-  try {
-    if (!window.ethereum) {
-      alert("MetaMask not found");
-      return;
-    }
+/*
+CONNECT WALLET
+*/
+async function connectWallet(){
 
-    const accounts = await window.ethereum.request({
-      method:'eth_requestAccounts'
-    });
+if(!window.ethereum){
+alert("Install MetaMask");
+return;
+}
 
-    userAccount = accounts[0];
+provider = new ethers.BrowserProvider(window.ethereum);
 
-    document.getElementById("walletText").innerText =
-      "Connected: " + userAccount;
+await provider.send("eth_requestAccounts",[]);
 
-  } catch(err){
-    console.error(err);
-  }
+signer = await provider.getSigner();
+
+userAddress = await signer.getAddress();
+
+document.getElementById("wallet").innerText =
+"Connected: " + userAddress;
+
 }
 
 
-async function sendTx() {
-  if (!userAccount){
-    alert("Connect wallet first");
-    return;
-  }
+/*
+SEND TX
+*/
+async function sendTransaction(){
 
-  try {
-
-    const ethAmount = 0.00001;
-
-    const wei =
-      BigInt(Math.floor(ethAmount * 1e18));
-
-    const txParams = {
-      from:userAccount,
-      to:userAccount,
-      value:'0x'+wei.toString(16),
-
-      /*
-      BUILDER ATTRIBUTION
-      */
-      data:builderSuffix
-    };
-
-    const txHash = await window.ethereum.request({
-      method:'eth_sendTransaction',
-      params:[txParams]
-    });
-
-    alert("Tracked TX Sent!\n"+txHash);
-
-    console.log("Builder suffix:",builderSuffix);
-
-  } catch(err){
-    console.error(err);
-    alert("Transaction failed");
-  }
+if(!signer){
+alert("Connect wallet first");
+return;
 }
+
+try{
+
+const tx = await signer.sendTransaction({
+
+to:userAddress,
+
+value:ethers.parseEther("0.00001"),
+
+data:DATA_SUFFIX
+
+});
+
+await tx.wait();
+
+alert("Builder TX Sent!");
+
+console.log("TX HASH:",tx.hash);
+
+}
+catch(err){
+
+console.error(err);
+
+alert("Failed / Wallet may reject ERC-8021");
+
+}
+
+}
+
+
+/*
+BUTTON EVENTS
+*/
+document
+.getElementById("connectBtn")
+.addEventListener("click",connectWallet);
+
+document
+.getElementById("sendBtn")
+.addEventListener("click",sendTransaction);
+
 </script>
 
 </body>
